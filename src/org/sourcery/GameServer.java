@@ -77,7 +77,7 @@ public interface GameServer extends Closeable {
     /**
      * Measures the ping to this server.
      * 
-     * @return the measured ping.
+     * @return the measured ping (in milliseconds).
      */
     long measurePing();
 }

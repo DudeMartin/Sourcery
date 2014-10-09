@@ -32,6 +32,11 @@ public class QueryPacket {
     public static final int SPLIT_QUERY_HEADER = 0xFFFFFFFE;
 
     /**
+     * The maximum number of bytes a single query packet can contain.
+     */
+    public static final int MAXIMUM_PACKET_SIZE = 1400;
+
+    /**
      * The packet header byte.
      */
     public final byte header;
