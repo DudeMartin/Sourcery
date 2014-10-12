@@ -1,13 +1,13 @@
 package org.sourcery;
 
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
 
 import org.sourcery.packet.QueryPacket;
+import org.sourcery.util.ByteVector;
 
 /**
  * A base implementation of a generic game server.
@@ -17,7 +17,7 @@ import org.sourcery.packet.QueryPacket;
 public abstract class AbstractGameServer implements GameServer {
 
     protected final InetSocketAddress addr;
-    protected final DatagramChannel queryChannel;
+    protected final DatagramSocket querySocket;
 
     /**
      * Constructs an abstract representation of a game server.
@@ -29,8 +29,8 @@ public abstract class AbstractGameServer implements GameServer {
      */
     public AbstractGameServer(InetSocketAddress addr) throws IOException {
 	this.addr = addr;
-	queryChannel = DatagramChannel.open();
-	queryChannel.connect(addr);
+	querySocket = new DatagramSocket();
+	querySocket.connect(addr);
     }
 
     /**
@@ -42,13 +42,11 @@ public abstract class AbstractGameServer implements GameServer {
      *             if a communication error occurs.
      */
     protected final void sendQuery(QueryPacket query) throws IOException {
-	ByteBuffer buf = ByteBuffer.allocate(query.payload.rewind().remaining() + 5);
-	buf.order(ByteOrder.LITTLE_ENDIAN);
-	buf.putInt(QueryPacket.SIMPLE_QUERY_HEADER);
-	buf.put(query.header);
-	buf.put(query.payload);
-	buf.flip();
-	queryChannel.write(buf);
+	ByteVector out = new ByteVector(query.payload.length + 5);
+	out.writeLittleEndianInt(QueryPacket.SIMPLE_QUERY_HEADER);
+	out.writeByte(query.header);
+	out.writeBytes(query.payload);
+	querySocket.send(new DatagramPacket(out.b, out.index));
     }
 
     /**
@@ -59,30 +57,33 @@ public abstract class AbstractGameServer implements GameServer {
      *             if a communication error occurs.
      */
     protected QueryPacket readQuery() throws IOException {
-	ByteBuffer buf = ByteBuffer.allocate(QueryPacket.MAXIMUM_PACKET_SIZE).order(ByteOrder.LITTLE_ENDIAN);
-	queryChannel.read(buf);
-	buf.flip();
-	if (buf.getInt() == QueryPacket.SPLIT_QUERY_HEADER) {
-	    return constructResponse(buf);
+	ByteVector in = new ByteVector(QueryPacket.MAXIMUM_PACKET_SIZE);
+	DatagramPacket packet = new DatagramPacket(in.b, in.b.length);
+	querySocket.receive(packet);
+	if (in.readLittleEndianInt() == QueryPacket.SPLIT_QUERY_HEADER) {
+	    return constructSplitQuery(packet);
 	}
-	byte header = buf.get();
-	ByteBuffer payload = buf.slice().order(ByteOrder.LITTLE_ENDIAN);
+	byte header = in.readByte();
+	byte[] payload = in.readBytes(packet.getLength() - 5);
 	return new QueryPacket(header, payload);
     }
 
     /**
-     * Constructs a query packet by joining multiple packets together, reading
+     * Constructs a split query by joining multiple packets together, reading
      * them as necessary.
      * 
-     * @param buf
-     *            the data of the initial packet.
-     * @return the query.
+     * <p>
+     * The format of a split query response varies based on the game engine.
+     * 
+     * @param init
+     *            the initial packet.
+     * @return the constructed query.
      * @throws IOException
      *             if a communication error occurs.
      * @throws CompressedPacketException
      *             if the response is compressed.
      */
-    protected abstract QueryPacket constructResponse(ByteBuffer buf) throws IOException;
+    protected abstract QueryPacket constructSplitQuery(DatagramPacket init) throws IOException;
 
     /**
      * Measures the time it takes to send a server information request and
@@ -96,11 +97,11 @@ public abstract class AbstractGameServer implements GameServer {
     }
 
     /**
-     * Closes the channel used for querying.
+     * Closes the socket used for querying.
      */
     @Override
     public void close() throws IOException {
-	queryChannel.close();
+	querySocket.close();
     }
 
     /**

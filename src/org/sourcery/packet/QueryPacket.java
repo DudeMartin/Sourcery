@@ -1,7 +1,5 @@
 package org.sourcery.packet;
 
-import java.nio.ByteBuffer;
-
 /**
  * Represents a generic query packet.
  * 
@@ -44,7 +42,7 @@ public class QueryPacket {
     /**
      * The payload of the packet.
      */
-    public final ByteBuffer payload;
+    public final byte[] payload;
 
     /**
      * Creates a new query packet.
@@ -54,7 +52,7 @@ public class QueryPacket {
      * @param payload
      *            the payload.
      */
-    public QueryPacket(byte header, ByteBuffer payload) {
+    public QueryPacket(byte header, byte[] payload) {
 	this.header = header;
 	this.payload = payload;
     }
