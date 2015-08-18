@@ -93,7 +93,7 @@ public abstract class AbstractGameServer implements GameServer {
     public long measurePing() {
 	long timeSent = System.nanoTime();
 	getInformation();
-	return TimeUnit.MILLISECONDS.convert(System.nanoTime() - timeSent, TimeUnit.NANOSECONDS);
+	return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timeSent);
     }
 
     /**

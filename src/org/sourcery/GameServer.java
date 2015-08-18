@@ -15,13 +15,26 @@ import org.sourcery.model.info.ServerInformation;
  * two protocols:
  * 
  * <ul>
- * <li>the server query protocol
+ * <li>the server query protocol,
  * <li>the RCON (remote console) protocol.
  * </ul>
  * 
- * Communication is performed in a blocking manner. When no more communication
- * will be made, the connection to the server can (and should) be closed using
- * the <code>close</code> method.
+ * <p>
+ * Communication is performed in a blocking manner. However, it is important to
+ * recognize that certain interactions are done over different sockets, namely,
+ * querying and RCON. As a result, these interactions do not block each other;
+ * two queries will block each other, but a <i>single</i> query and an RCON
+ * interaction will not. When no more communication will be made, the connection
+ * to the server can (and should) be closed using the <code>close</code> method.
+ * 
+ * <p>
+ * Implementations of this interface are designed with synchronous use in mind.
+ * They make no guarantees to implement functionality to support concurrent use,
+ * like queuing packets. Certain operations, require the exchange of multiple
+ * packets through the same socket, which rely on an orderly sequence of
+ * actions. For example, attempting to RCON authorize multiple times
+ * concurrently may yield undefined behavior. As a result, unless otherwise
+ * stated, external synchronization is required for concurrent interaction.
  * 
  * @author Martin Tuskevicius
  */

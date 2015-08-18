@@ -4,6 +4,11 @@ package org.sourcery.util;
  * A utility class for reading and writing various data types to and from a byte
  * array.
  * 
+ * <p>
+ * This implementation is not internally synchronized, that is, interaction by
+ * multiple threads on a single instance will yield undefined behavior. In such
+ * a scenario, external synchronization is required.
+ * 
  * @author Martin Tuskevicius
  */
 public class ByteVector {
